@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DPD Recruitment - Google Sheets Sync</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #C41E3A 0%, #1a1a1a 100%); }
+        .app-screen { display: none; min-height: 100vh; flex: 1; }
+        .app-screen.show { display: flex; }
+        .login-box { background: white; padding: 40px; border-radius: 8px; width: 100%; max-width: 500px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        .login-box h1 { color: #C41E3A; margin-bottom: 20px; text-align: center; font-size: 28px; }
+        .setup-info { background: #d1ecf1; padding: 15px; border-radius: 4px; margin-bottom: 20px; font-size: 12px; color: #0c5460; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 4px; font-size: 13px; }
+        .btn { padding: 10px 15px; border: none; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .btn-login { width: 100%; padding: 12px; background: #C41E3A; color: white; margin-bottom: 10px; }
+        .btn-login:hover { background: #a01629; }
+        .btn-primary { background: #28a745; color: white; }
+        .btn-primary:hover { background: #218838; }
+        .btn-view { background: #007bff; color: white; font-size: 11px; margin-right: 5px; }
+        .btn-view:hover { background: #0056b3; }
+        .btn-edit { background: #17a2b8; color: white; font-size: 11px; margin-right: 5px; }
+        .btn-edit:hover { background: #138496; }
+        .btn-delete { background: #dc3545; color: white; font-size: 11px; }
+        .btn-delete:hover { background: #c82333; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-secondary:hover { background: #5a6268; }
+        .sidebar { width: 250px; background: #1a1a1a; color: white; padding: 30px 0; }
+        .sidebar-logo { padding: 0 20px 30px; font-size: 24px; font-weight: bold; color: #C41E3A; border-bottom: 2px solid #C41E3A; }
+        .sidebar-menu a { display: block; padding: 12px 20px; color: white; cursor: pointer; border-left: 3px solid transparent; }
+        .sidebar-menu a:hover { background: #C41E3A; }
+        .sidebar-menu a.active { background: #C41E3A; }
+        .main-content { flex: 1; overflow: auto; }
+        .header { background: white; padding: 20px 30px; border-bottom: 2px solid #C41E3A; display: flex; justify-content: space-between; align-items: center; }
+        .header h2 { color: #C41E3A; }
+        .header-actions { display: flex; gap: 10px; }
+        .logout-btn { background: #C41E3A; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+        .content { display: none; padding: 30px; }
+        .content.show { display: block; }
+        .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #C41E3A; }
+        .stat-card .number { font-size: 32px; font-weight: bold; color: #C41E3A; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; margin-bottom: 20px; font-size: 11px; }
+        th { background: #1a1a1a; color: white; padding: 10px; text-align: left; }
+        td { padding: 8px 10px; border-bottom: 1px solid #ddd; }
+        tr:hover { background: #f5f5f5; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000; }
+        .modal.show { display: flex; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 700px; max-height: 90vh; overflow-y: auto; }
+        .modal-content h2 { color: #C41E3A; margin-bottom: 20px; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .close-btn { float: right; font-size: 24px; cursor: pointer; color: #999; }
+        .sync-status { position: fixed; bottom: 20px; right: 20px; padding: 10px 15px; border-radius: 4px; font-size: 11px; color: white; }
+        .sync-status.syncing { background: #ffc107; }
+        .sync-status.synced { background: #28a745; }
+        .interview-group { background: #f8f9fa; padding: 15px; border-radius: 4px; margin-bottom: 15px; }
+        .interview-group h4 { color: #C41E3A; margin-bottom: 10px; }
+        .pipeline { background: #f8f9fa; padding: 15px; border-radius: 4px; }
+        .pipeline-item { background: white; padding: 15px; margin-bottom: 10px; border-left: 4px solid #28a745; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <!-- LOGIN -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-box">
+            <h1>DPD RECRUITMENT</h1>
+            
+            <div class="setup-info">
+                ✅ GOOGLE SHEETS REAL-TIME SYNC<br>
+                Team sharing across devices
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="email" value="hamza@dpd.be">
+            </div>
+            <div class="form-group">
+                <label>Wachtwoord</label>
+                <input type="password" id="password" value="recruit2026">
+            </div>
+            <button class="btn btn-login" onclick="loginFunc()">INLOGGEN</button>
+        </div>
+    </div>
+
+    <!-- APP -->
+    <div class="app-screen" id="appScreen">
+        <div class="sidebar">
+            <div class="sidebar-logo">🎯 DPD</div>
+            <ul class="sidebar-menu">
+                <li><a onclick="switchTab('vacancies')" class="menu-link active">VACATURES</a></li>
+                <li><a onclick="switchTab('candidates')" class="menu-link">KANDIDATEN</a></li>
+            </ul>
+            <div style="padding: 20px; margin-top: 30px; border-top: 1px solid #444; font-size: 12px; color: #999;">
+                <p id="userName"></p>
+                <p style="margin-top: 10px; color: #28a745;">☁️ GOOGLE SHEETS</p>
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="header">
+                <h2 id="pageTitle">VACATURES</h2>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="openAddVacancy()">+ NIEUWE VACATURE</button>
+                    <button class="logout-btn" onclick="logoutFunc()">UITLOGGEN</button>
+                </div>
+            </div>
+
+            <div id="vacancies" class="content show">
+                <div class="stats">
+                    <div class="stat-card">
+                        <h3>Vacatures</h3>
+                        <div class="number" id="vacCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Kandidaten</h3>
+                        <div class="number" id="candCount">0</div>
+                    </div>
+                </div>
+                <table>
+                    <thead><tr><th>Functie</th><th>Type</th><th>Afdeling</th><th>Manager</th><th>Dagen</th><th>Recruiter</th><th>Acties</th></tr></thead>
+                    <tbody id="vacancies-table"></tbody>
+                </table>
+            </div>
+
+            <div id="candidates" class="content">
+                <div style="margin-bottom: 20px;">
+                    <button class="btn btn-primary" onclick="openAddCandidate()">+ NIEUWE KANDIDAAT</button>
+                </div>
+                <table>
+                    <thead><tr><th>Naam</th><th>Functie</th><th>Bron</th><th>Status</th><th>Interview 1</th><th>Interview 2</th><th>Interview 3</th><th>Acties</th></tr></thead>
+                    <tbody id="candidates-table"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- VACANCY MODAL -->
+    <div class="modal" id="vacancyModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('vacancyModal')">×</span>
+            <h2 id="vacancyModalTitle">Nieuwe Vacature</h2>
+            
+            <div class="form-group">
+                <label>Functie Titel</label>
+                <input type="text" id="vac_title">
+            </div>
+            <div class="form-group">
+                <label>Replacement or New</label>
+                <select id="vac_type">
+                    <option value="">Selecteer...</option>
+                    <option value="Replacement">Replacement</option>
+                    <option value="New">New</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Afdeling</label>
+                <input type="text" id="vac_dept">
+            </div>
+            <div class="form-group">
+                <label>Hiring Manager</label>
+                <input type="text" id="vac_manager">
+            </div>
+            <div class="form-group">
+                <label>Publicatie Datum</label>
+                <input type="date" id="vac_pubdate">
+            </div>
+            <div class="form-group">
+                <label>Fases</label>
+                <input type="text" id="vac_phases">
+            </div>
+            <div class="form-group">
+                <label>Recruiter</label>
+                <input type="text" id="vac_recruiter">
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="saveVacancy()">💾 OPSLAAN</button>
+                <button class="btn btn-secondary" onclick="closeModal('vacancyModal')">Annuleren</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VACANCY DETAIL MODAL -->
+    <div class="modal" id="vacancyDetailModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('vacancyDetailModal')">×</span>
+            <h2 id="detailTitle"></h2>
+            <div id="detailContent"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('vacancyDetailModal')">Sluiten</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CANDIDATE MODAL -->
+    <div class="modal" id="candidateModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('candidateModal')">×</span>
+            <h2 id="candidateModalTitle">Nieuwe Kandidaat</h2>
+            
+            <div class="form-group">
+                <label>Naam</label>
+                <input type="text" id="cand_name">
+            </div>
+            <div class="form-group">
+                <label>Functie (Vacancy)</label>
+                <input type="text" id="cand_job">
+            </div>
+            <div class="form-group">
+                <label>Bron</label>
+                <input type="text" id="cand_source">
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <input type="text" id="cand_status">
+            </div>
+            <div class="form-group">
+                <label>LinkedIn</label>
+                <input type="text" id="cand_linkedin">
+            </div>
+
+            <div class="interview-group">
+                <h4>Interview 1</h4>
+                <div class="form-group">
+                    <label>Datum</label>
+                    <input type="date" id="cand_int1_date">
+                </div>
+            </div>
+
+            <div class="interview-group">
+                <h4>Interview 2</h4>
+                <div class="form-group">
+                    <label>Datum</label>
+                    <input type="date" id="cand_int2_date">
+                </div>
+            </div>
+
+            <div class="interview-group">
+                <h4>Interview 3</h4>
+                <div class="form-group">
+                    <label>Datum</label>
+                    <input type="date" id="cand_int3_date">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Comments</label>
+                <textarea id="cand_comments" rows="3"></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="saveCandidate()">💾 OPSLAAN</button>
+                <button class="btn btn-secondary" onclick="closeModal('candidateModal')">Annuleren</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="sync-status synced" id="syncStatus">✅ Google Sheets Synced</div>
+
+    <script>
+        let state = { user: null, vacancies: [], candidates: [], editingId: null };
+        const SHEET_ID = '1CZgrxV3t3nuo7QwpxOErKbL62OB7pat20hJgtDPtQqs';
+        const VACANCIES_GID = 0;
+        const CANDIDATES_GID = 2110855605;
+
+        function loginFunc() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const users = [
+                { email: 'hamza@dpd.be', name: 'Hamza Yassine' },
+                { email: 'jean@dpd.be', name: 'Jean-Celestin' },
+                { email: 'caroline@dpd.be', name: 'Caroline Rombaut' }
+            ];
+            const user = users.find(u => u.email === email && password === 'recruit2026');
+            if (!user) {
+                alert('❌ Email/wachtwoord fout!');
+                return;
+            }
+            state.user = user;
+            localStorage.setItem('user', JSON.stringify(user));
+            document.getElementById('userName').textContent = '👤 ' + user.name;
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appScreen').classList.add('show');
+            loadDataFromSheet();
+            setInterval(loadDataFromSheet, 3000);
+        }
+
+        function logoutFunc() {
+            state.user = null;
+            localStorage.removeItem('user');
+            document.getElementById('appScreen').classList.remove('show');
+            document.getElementById('loginScreen').style.display = 'flex';
+        }
+
+        function loadDataFromSheet() {
+            document.getElementById('syncStatus').classList.add('syncing');
+            document.getElementById('syncStatus').textContent = '🔄 Syncing...';
+
+            Promise.all([
+                fetchSheetAsCSV(VACANCIES_GID),
+                fetchSheetAsCSV(CANDIDATES_GID)
+            ]).then(([vacCSV, candCSV]) => {
+                parseVacancies(vacCSV);
+                parseCandidates(candCSV);
+                renderVacancies();
+                renderCandidates();
+                updateStats();
+                document.getElementById('syncStatus').classList.remove('syncing');
+                document.getElementById('syncStatus').classList.add('synced');
+                document.getElementById('syncStatus').textContent = '✅ Synced';
+            }).catch(e => {
+                console.log('Sync error:', e);
+                loadLocalData();
+            });
+        }
+
+        function fetchSheetAsCSV(gid) {
+            const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
+            return fetch(url).then(r => r.text());
+        }
+
+        function parseVacancies(csv) {
+            const lines = csv.split('\n').filter(l => l.trim());
+            state.vacancies = [];
+            lines.forEach((line, idx) => {
+                if (idx === 0) return;
+                const [type, title, dept, manager, pubdate, phases, recruiter] = line.split(',').map(v => v.trim());
+                if (title) {
+                    state.vacancies.push({ type, title, dept, manager, pubdate, phases, recruiter });
+                }
+            });
+            saveLocalData();
+        }
+
+        function parseCandidates(csv) {
+            const lines = csv.split('\n').filter(l => l.trim());
+            state.candidates = [];
+            lines.forEach((line, idx) => {
+                if (idx === 0) return;
+                const [name, job, source, status, linkedin, int1_date, int2_date, int3_date, comments] = line.split(',').map(v => v.trim());
+                if (name) {
+                    state.candidates.push({ name, job, source, status, linkedin, int1_date, int2_date, int3_date, comments });
+                }
+            });
+            saveLocalData();
+        }
+
+        function saveLocalData() {
+            localStorage.setItem('dpd-local-backup', JSON.stringify(state));
+        }
+
+        function loadLocalData() {
+            const backup = localStorage.getItem('dpd-local-backup');
+            if (backup) {
+                const data = JSON.parse(backup);
+                state.vacancies = data.vacancies || [];
+                state.candidates = data.candidates || [];
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('vacCount').textContent = state.vacancies.length;
+            document.getElementById('candCount').textContent = state.candidates.length;
+        }
+
+        function calcDaysOpen(pubDate) {
+            if (!pubDate) return '-';
+            const pub = new Date(pubDate);
+            const today = new Date();
+            const diff = Math.floor((today - pub) / (1000 * 60 * 60 * 24));
+            return diff + ' days';
+        }
+
+        function renderVacancies() {
+            const tbody = document.getElementById('vacancies-table');
+            tbody.innerHTML = state.vacancies.length ? state.vacancies.map((v, idx) => `
+                <tr>
+                    <td>${v.title || '-'}</td>
+                    <td>${v.type || '-'}</td>
+                    <td>${v.dept || '-'}</td>
+                    <td>${v.manager || '-'}</td>
+                    <td>${calcDaysOpen(v.pubdate)}</td>
+                    <td>${v.recruiter || '-'}</td>
+                    <td>
+                        <button class="btn btn-view" onclick="viewVacancy(${idx})">View</button>
+                    </td>
+                </tr>
+            `).join('') : '<tr><td colspan="7">No vacancies</td></tr>';
+        }
+
+        function viewVacancy(idx) {
+            const vac = state.vacancies[idx];
+            const candidates = state.candidates.filter(c => c.job === vac.title);
+            
+            let html = `
+                <h3>${vac.title}</h3>
+                <p><strong>Afdeling:</strong> ${vac.dept}</p>
+                <p><strong>Manager:</strong> ${vac.manager}</p>
+                <p><strong>Type:</strong> ${vac.type}</p>
+                <hr style="margin: 20px 0;">
+                <h4>Pipeline (${candidates.length} kandidaten):</h4>
+                <div class="pipeline">
+            `;
+
+            if (candidates.length === 0) {
+                html += '<p style="color: #999;">Geen kandidaten</p>';
+            } else {
+                candidates.forEach(c => {
+                    html += `
+                        <div class="pipeline-item">
+                            <strong>${c.name}</strong><br>
+                            Status: ${c.status}<br>
+                            Interview 1: ${c.int1_date || 'No date'}<br>
+                            Interview 2: ${c.int2_date || 'No date'}<br>
+                            Interview 3: ${c.int3_date || 'No date'}
+                        </div>
+                    `;
+                });
+            }
+            html += '</div>';
+
+            document.getElementById('detailTitle').textContent = '📋 ' + vac.title;
+            document.getElementById('detailContent').innerHTML = html;
+            document.getElementById('vacancyDetailModal').classList.add('show');
+        }
+
+        function renderCandidates() {
+            const tbody = document.getElementById('candidates-table');
+            tbody.innerHTML = state.candidates.length ? state.candidates.map(c => `
+                <tr>
+                    <td>${c.name || '-'}</td>
+                    <td>${c.job || '-'}</td>
+                    <td>${c.source || '-'}</td>
+                    <td>${c.status || '-'}</td>
+                    <td>${c.int1_date || '-'}</td>
+                    <td>${c.int2_date || '-'}</td>
+                    <td>${c.int3_date || '-'}</td>
+                    <td>-</td>
+                </tr>
+            `).join('') : '<tr><td colspan="8">No candidates</td></tr>';
+        }
+
+        function openAddVacancy() {
+            state.editingId = null;
+            document.getElementById('vacancyModalTitle').textContent = '➕ Nieuwe Vacature';
+            document.getElementById('vac_title').value = '';
+            document.getElementById('vac_type').value = '';
+            document.getElementById('vac_dept').value = '';
+            document.getElementById('vac_manager').value = '';
+            document.getElementById('vac_pubdate').value = '';
+            document.getElementById('vac_phases').value = '';
+            document.getElementById('vac_recruiter').value = '';
+            document.getElementById('vacancyModal').classList.add('show');
+        }
+
+        function saveVacancy() {
+            alert('💾 In production, dit zou naar Google Sheets schrijven. Nu via localStorage backup.');
+            closeModal('vacancyModal');
+        }
+
+        function openAddCandidate() {
+            state.editingId = null;
+            document.getElementById('candidateModalTitle').textContent = '➕ Nieuwe Kandidaat';
+            document.getElementById('cand_name').value = '';
+            document.getElementById('cand_job').value = '';
+            document.getElementById('cand_source').value = '';
+            document.getElementById('cand_status').value = '';
+            document.getElementById('cand_linkedin').value = '';
+            document.getElementById('cand_int1_date').value = '';
+            document.getElementById('cand_int2_date').value = '';
+            document.getElementById('cand_int3_date').value = '';
+            document.getElementById('cand_comments').value = '';
+            document.getElementById('candidateModal').classList.add('show');
+        }
+
+        function saveCandidate() {
+            alert('💾 In production, dit zou naar Google Sheets schrijven. Nu via localStorage backup.');
+            closeModal('candidateModal');
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.content').forEach(t => t.classList.remove('show'));
+            document.querySelectorAll('.menu-link').forEach(l => l.classList.remove('active'));
+            document.getElementById(tab).classList.add('show');
+            event.target.classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+
+        window.addEventListener('load', function() {
+            const user = localStorage.getItem('user');
+            if (user) {
+                state.user = JSON.parse(user);
+                document.getElementById('userName').textContent = '👤 ' + state.user.name;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appScreen').classList.add('show');
+                loadDataFromSheet();
+                setInterval(loadDataFromSheet, 3000);
+            }
+        });
+    </script>
+</body>
+</html>
