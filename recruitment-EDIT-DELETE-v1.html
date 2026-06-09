@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DPD Recruitment - Edit/Delete</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #C41E3A 0%, #1a1a1a 100%); }
+        .app-screen { display: none; min-height: 100vh; flex: 1; }
+        .app-screen.show { display: flex; }
+        .login-box { background: white; padding: 40px; border-radius: 8px; width: 100%; max-width: 450px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        .login-box h1 { color: #C41E3A; margin-bottom: 20px; text-align: center; font-size: 28px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 4px; }
+        .btn { padding: 10px 15px; border: none; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .btn-login { width: 100%; padding: 12px; background: #C41E3A; color: white; margin-bottom: 10px; }
+        .btn-login:hover { background: #a01629; }
+        .btn-primary { background: #28a745; color: white; }
+        .btn-primary:hover { background: #218838; }
+        .btn-edit { background: #17a2b8; color: white; font-size: 11px; margin-right: 5px; }
+        .btn-edit:hover { background: #138496; }
+        .btn-delete { background: #dc3545; color: white; font-size: 11px; }
+        .btn-delete:hover { background: #c82333; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-secondary:hover { background: #5a6268; }
+        .sidebar { width: 250px; background: #1a1a1a; color: white; padding: 30px 0; }
+        .sidebar-logo { padding: 0 20px 30px; font-size: 24px; font-weight: bold; color: #C41E3A; border-bottom: 2px solid #C41E3A; }
+        .sidebar-menu a { display: block; padding: 12px 20px; color: white; cursor: pointer; border-left: 3px solid transparent; }
+        .sidebar-menu a:hover { background: #C41E3A; }
+        .sidebar-menu a.active { background: #C41E3A; }
+        .main-content { flex: 1; overflow: auto; }
+        .header { background: white; padding: 20px 30px; border-bottom: 2px solid #C41E3A; display: flex; justify-content: space-between; align-items: center; }
+        .header h2 { color: #C41E3A; }
+        .header-actions { display: flex; gap: 10px; }
+        .logout-btn { background: #C41E3A; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+        .content { display: none; padding: 30px; }
+        .content.show { display: block; }
+        .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #C41E3A; }
+        .stat-card .number { font-size: 32px; font-weight: bold; color: #C41E3A; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; margin-bottom: 20px; }
+        th { background: #1a1a1a; color: white; padding: 12px; text-align: left; font-size: 12px; }
+        td { padding: 10px 12px; border-bottom: 1px solid #ddd; font-size: 12px; }
+        tr:hover { background: #f5f5f5; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000; }
+        .modal.show { display: flex; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+        .modal-content h2 { color: #C41E3A; margin-bottom: 20px; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .close-btn { float: right; font-size: 24px; cursor: pointer; color: #999; }
+        .close-btn:hover { color: #000; }
+        .sync-info { background: #d1ecf1; padding: 15px; border-radius: 4px; margin-bottom: 20px; font-size: 12px; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <!-- LOGIN -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-box">
+            <h1>DPD RECRUITMENT</h1>
+            
+            <div class="sync-info">
+                ✅ TEAM SHARE + EDIT/DELETE
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="email" value="hamza@dpd.be">
+            </div>
+            <div class="form-group">
+                <label>Wachtwoord</label>
+                <input type="password" id="password" value="recruit2026">
+            </div>
+            <button class="btn btn-login" onclick="loginFunc()">INLOGGEN</button>
+
+            <div style="margin-top: 20px; font-size: 11px; color: #666; text-align: center;">
+                <p><strong>Test:</strong> hamza@ jean@ caroline@ @dpd.be</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- APP -->
+    <div class="app-screen" id="appScreen">
+        <div class="sidebar">
+            <div class="sidebar-logo">🎯 DPD</div>
+            <ul class="sidebar-menu">
+                <li><a onclick="switchTab('vacancies')" class="menu-link active">VACATURES</a></li>
+                <li><a onclick="switchTab('candidates')" class="menu-link">KANDIDATEN</a></li>
+            </ul>
+            <div style="padding: 20px; margin-top: 30px; border-top: 1px solid #444; font-size: 12px; color: #999;">
+                <p id="userName"></p>
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="header">
+                <h2 id="pageTitle">VACATURES</h2>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="openAddVacancy()">+ NIEUWE VACATURE</button>
+                    <button class="logout-btn" onclick="logoutFunc()">UITLOGGEN</button>
+                </div>
+            </div>
+
+            <div id="vacancies" class="content show">
+                <div class="stats">
+                    <div class="stat-card">
+                        <h3>Vacatures</h3>
+                        <div class="number" id="vacCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Kandidaten</h3>
+                        <div class="number" id="candCount">0</div>
+                    </div>
+                </div>
+                <table>
+                    <thead><tr><th>Functie</th><th>Afdeling</th><th>Manager</th><th>Dagen</th><th>Fases</th><th>Recruiter</th><th>Acties</th></tr></thead>
+                    <tbody id="vacancies-table"></tbody>
+                </table>
+            </div>
+
+            <div id="candidates" class="content">
+                <div style="margin-bottom: 20px;">
+                    <button class="btn btn-primary" onclick="openAddCandidate()">+ NIEUWE KANDIDAAT</button>
+                </div>
+                <table>
+                    <thead><tr><th>Naam</th><th>Functie</th><th>Bron</th><th>Status</th><th>LinkedIn</th><th>Acties</th></tr></thead>
+                    <tbody id="candidates-table"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <div class="modal" id="vacancyModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('vacancyModal')">×</span>
+            <h2 id="vacancyModalTitle">Nieuwe Vacature</h2>
+            
+            <div class="form-group">
+                <label>Functie Titel</label>
+                <input type="text" id="vac_title" placeholder="bijv. Senior Developer">
+            </div>
+            <div class="form-group">
+                <label>Afdeling</label>
+                <input type="text" id="vac_dept" placeholder="bijv. IT">
+            </div>
+            <div class="form-group">
+                <label>Hiring Manager</label>
+                <input type="text" id="vac_manager" placeholder="bijv. John Doe">
+            </div>
+            <div class="form-group">
+                <label>Aantal Dagen Open</label>
+                <input type="number" id="vac_days" placeholder="bijv. 30">
+            </div>
+            <div class="form-group">
+                <label>Fases</label>
+                <input type="text" id="vac_phases" placeholder="bijv. Screening, Interview, Offer">
+            </div>
+            <div class="form-group">
+                <label>Recruiter</label>
+                <input type="text" id="vac_recruiter" placeholder="bijv. Jane Smith">
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="saveVacancy()">💾 OPSLAAN</button>
+                <button class="btn btn-secondary" onclick="closeModal('vacancyModal')">Annuleren</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="candidateModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('candidateModal')">×</span>
+            <h2 id="candidateModalTitle">Nieuwe Kandidaat</h2>
+            
+            <div class="form-group">
+                <label>Naam</label>
+                <input type="text" id="cand_name" placeholder="bijv. Alice Brown">
+            </div>
+            <div class="form-group">
+                <label>Functie</label>
+                <input type="text" id="cand_job" placeholder="bijv. Developer">
+            </div>
+            <div class="form-group">
+                <label>Bron</label>
+                <input type="text" id="cand_source" placeholder="bijv. LinkedIn, Indeed">
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <input type="text" id="cand_status" placeholder="bijv. New, Screening, Interview">
+            </div>
+            <div class="form-group">
+                <label>LinkedIn</label>
+                <input type="text" id="cand_linkedin" placeholder="bijv. linkedin.com/in/alice">
+            </div>
+            <div class="form-group">
+                <label>Comments</label>
+                <textarea id="cand_comments" placeholder="Opmerkingen..." rows="3"></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="saveCandidate()">💾 OPSLAAN</button>
+                <button class="btn btn-secondary" onclick="closeModal('candidateModal')">Annuleren</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = { user: null, vacancies: [], candidates: [], editingId: null, editingType: null };
+
+        function loginFunc() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const users = [
+                { email: 'hamza@dpd.be', name: 'Hamza Yassine' },
+                { email: 'jean@dpd.be', name: 'Jean-Celestin' },
+                { email: 'caroline@dpd.be', name: 'Caroline Rombaut' }
+            ];
+
+            const user = users.find(u => u.email === email && password === 'recruit2026');
+            if (!user) {
+                alert('❌ Email/wachtwoord fout!');
+                return;
+            }
+
+            state.user = user;
+            localStorage.setItem('user', JSON.stringify(user));
+            
+            document.getElementById('userName').textContent = '👤 ' + user.name;
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appScreen').classList.add('show');
+
+            loadData();
+            setInterval(loadData, 1000);
+        }
+
+        function logoutFunc() {
+            state.user = null;
+            localStorage.removeItem('user');
+            document.getElementById('appScreen').classList.remove('show');
+            document.getElementById('loginScreen').style.display = 'flex';
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('teamData');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    state.vacancies = data.vacancies || [];
+                    state.candidates = data.candidates || [];
+                    renderVacancies();
+                    renderCandidates();
+                    updateStats();
+                } catch(e) {}
+            }
+        }
+
+        function saveData() {
+            const data = {
+                vacancies: state.vacancies,
+                candidates: state.candidates
+            };
+            localStorage.setItem('teamData', JSON.stringify(data));
+        }
+
+        function updateStats() {
+            document.getElementById('vacCount').textContent = state.vacancies.length;
+            document.getElementById('candCount').textContent = state.candidates.length;
+        }
+
+        function renderVacancies() {
+            const tbody = document.getElementById('vacancies-table');
+            tbody.innerHTML = state.vacancies.length ? state.vacancies.map((v, idx) => `
+                <tr>
+                    <td>${v.title || '-'}</td>
+                    <td>${v.dept || '-'}</td>
+                    <td>${v.manager || '-'}</td>
+                    <td>${v.days || '-'}</td>
+                    <td>${v.phases || '-'}</td>
+                    <td>${v.recruiter || '-'}</td>
+                    <td>
+                        <button class="btn btn-edit" onclick="editVacancy(${idx})">Edit</button>
+                        <button class="btn btn-delete" onclick="deleteVacancy(${idx})">Delete</button>
+                    </td>
+                </tr>
+            `).join('') : '<tr><td colspan="7" style="text-align: center; color: #999;">Geen data</td></tr>';
+        }
+
+        function renderCandidates() {
+            const tbody = document.getElementById('candidates-table');
+            tbody.innerHTML = state.candidates.length ? state.candidates.map((c, idx) => `
+                <tr>
+                    <td>${c.name || '-'}</td>
+                    <td>${c.job || '-'}</td>
+                    <td>${c.source || '-'}</td>
+                    <td>${c.status || '-'}</td>
+                    <td><a href="${c.linkedin}" target="_blank" style="color: #0077b5;">Profile</a></td>
+                    <td>
+                        <button class="btn btn-edit" onclick="editCandidate(${idx})">Edit</button>
+                        <button class="btn btn-delete" onclick="deleteCandidate(${idx})">Delete</button>
+                    </td>
+                </tr>
+            `).join('') : '<tr><td colspan="6" style="text-align: center; color: #999;">Geen data</td></tr>';
+        }
+
+        function openAddVacancy() {
+            state.editingId = null;
+            state.editingType = 'vacancy';
+            document.getElementById('vacancyModalTitle').textContent = '➕ Nieuwe Vacature';
+            document.getElementById('vac_title').value = '';
+            document.getElementById('vac_dept').value = '';
+            document.getElementById('vac_manager').value = '';
+            document.getElementById('vac_days').value = '';
+            document.getElementById('vac_phases').value = '';
+            document.getElementById('vac_recruiter').value = '';
+            document.getElementById('vacancyModal').classList.add('show');
+        }
+
+        function editVacancy(idx) {
+            const v = state.vacancies[idx];
+            state.editingId = idx;
+            state.editingType = 'vacancy';
+            document.getElementById('vacancyModalTitle').textContent = '✏️ Bewerk Vacature';
+            document.getElementById('vac_title').value = v.title || '';
+            document.getElementById('vac_dept').value = v.dept || '';
+            document.getElementById('vac_manager').value = v.manager || '';
+            document.getElementById('vac_days').value = v.days || '';
+            document.getElementById('vac_phases').value = v.phases || '';
+            document.getElementById('vac_recruiter').value = v.recruiter || '';
+            document.getElementById('vacancyModal').classList.add('show');
+        }
+
+        function saveVacancy() {
+            const v = {
+                title: document.getElementById('vac_title').value,
+                dept: document.getElementById('vac_dept').value,
+                manager: document.getElementById('vac_manager').value,
+                days: document.getElementById('vac_days').value,
+                phases: document.getElementById('vac_phases').value,
+                recruiter: document.getElementById('vac_recruiter').value
+            };
+
+            if (!v.title) {
+                alert('❌ Functie titel is verplicht!');
+                return;
+            }
+
+            if (state.editingId !== null) {
+                state.vacancies[state.editingId] = v;
+            } else {
+                state.vacancies.push(v);
+            }
+
+            saveData();
+            renderVacancies();
+            updateStats();
+            closeModal('vacancyModal');
+        }
+
+        function deleteVacancy(idx) {
+            if (confirm('❌ Zeker wissen deze vacature?')) {
+                state.vacancies.splice(idx, 1);
+                saveData();
+                renderVacancies();
+                updateStats();
+            }
+        }
+
+        function openAddCandidate() {
+            state.editingId = null;
+            state.editingType = 'candidate';
+            document.getElementById('candidateModalTitle').textContent = '➕ Nieuwe Kandidaat';
+            document.getElementById('cand_name').value = '';
+            document.getElementById('cand_job').value = '';
+            document.getElementById('cand_source').value = '';
+            document.getElementById('cand_status').value = '';
+            document.getElementById('cand_linkedin').value = '';
+            document.getElementById('cand_comments').value = '';
+            document.getElementById('candidateModal').classList.add('show');
+        }
+
+        function editCandidate(idx) {
+            const c = state.candidates[idx];
+            state.editingId = idx;
+            state.editingType = 'candidate';
+            document.getElementById('candidateModalTitle').textContent = '✏️ Bewerk Kandidaat';
+            document.getElementById('cand_name').value = c.name || '';
+            document.getElementById('cand_job').value = c.job || '';
+            document.getElementById('cand_source').value = c.source || '';
+            document.getElementById('cand_status').value = c.status || '';
+            document.getElementById('cand_linkedin').value = c.linkedin || '';
+            document.getElementById('cand_comments').value = c.comments || '';
+            document.getElementById('candidateModal').classList.add('show');
+        }
+
+        function saveCandidate() {
+            const c = {
+                name: document.getElementById('cand_name').value,
+                job: document.getElementById('cand_job').value,
+                source: document.getElementById('cand_source').value,
+                status: document.getElementById('cand_status').value,
+                linkedin: document.getElementById('cand_linkedin').value,
+                comments: document.getElementById('cand_comments').value
+            };
+
+            if (!c.name) {
+                alert('❌ Naam is verplicht!');
+                return;
+            }
+
+            if (state.editingId !== null) {
+                state.candidates[state.editingId] = c;
+            } else {
+                state.candidates.push(c);
+            }
+
+            saveData();
+            renderCandidates();
+            updateStats();
+            closeModal('candidateModal');
+        }
+
+        function deleteCandidate(idx) {
+            if (confirm('❌ Zeker wissen deze kandidaat?')) {
+                state.candidates.splice(idx, 1);
+                saveData();
+                renderCandidates();
+                updateStats();
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.content').forEach(t => t.classList.remove('show'));
+            document.querySelectorAll('.menu-link').forEach(l => l.classList.remove('active'));
+            document.getElementById(tab).classList.add('show');
+            event.target.classList.add('active');
+            
+            if (tab === 'vacancies') {
+                document.querySelector('.header-actions').innerHTML = 
+                    '<button class="btn btn-primary" onclick="openAddVacancy()">+ NIEUWE VACATURE</button>' +
+                    '<button class="logout-btn" onclick="logoutFunc()">UITLOGGEN</button>';
+                document.getElementById('pageTitle').textContent = 'VACATURES';
+            } else {
+                document.querySelector('.header-actions').innerHTML = 
+                    '<button class="logout-btn" onclick="logoutFunc()">UITLOGGEN</button>';
+                document.getElementById('pageTitle').textContent = 'KANDIDATEN';
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+
+        window.addEventListener('load', function() {
+            const user = localStorage.getItem('user');
+            if (user) {
+                state.user = JSON.parse(user);
+                document.getElementById('userName').textContent = '👤 ' + state.user.name;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appScreen').classList.add('show');
+                loadData();
+                setInterval(loadData, 1000);
+            }
+        });
+    </script>
+</body>
+</html>
